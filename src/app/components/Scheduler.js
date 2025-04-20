@@ -17,18 +17,31 @@ export default function SendEmails() {
       return;
     }
 
-    const sender = senders[0]; // Or allow user to select a sender
+    const sender = senders[0]; // Select from UI later if needed
     const toList = receivers.split(',').map(email => email.trim()).filter(Boolean);
 
     try {
       for (const to of toList) {
+        const enhancedHtml = `
+          <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+            ${template}
+            <br/><br/>
+            <hr/>
+            <p style="font-size: 12px; color: #777;">
+              You're receiving this email from <strong>${sender.email}</strong>.<br/>
+              If you didn't request this, please ignore.<br/>
+              To unsubscribe, reply with "unsubscribe".
+            </p>
+          </div>
+        `;
+
         const res = await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to,
-            subject: '📨 Webitya',
-            html: template,
+            subject: `📢 Important Update from Webitya`,
+            html: enhancedHtml,
             senderEmail: sender.email,
             senderPass: sender.pass,
           }),
@@ -36,6 +49,9 @@ export default function SendEmails() {
 
         const result = await res.json();
         if (!result.success) throw new Error(result.error);
+
+        // Delay between sends to avoid spam flagging
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
       alert('✅ Emails sent successfully!');
